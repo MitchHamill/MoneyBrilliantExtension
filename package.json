@@ -1,0 +1,11 @@
+{
+  "name": "money-brilliant-extension",
+  "version": "0.0.1",
+  "description": "An app built to extend the MoneyBrilliant finance tracking service",
+  "scripts": {
+    "start:app": "cd app; npm run start",
+    "start:server": "cd server; npm run start"
+  },
+  "author": "Mitchell Hamill",
+  "license": "ISC"
+}

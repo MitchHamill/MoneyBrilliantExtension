@@ -1,0 +1,31 @@
+{
+  "name": "money-brilliant-extension-server",
+  "version": "0.0.1",
+  "description": "A server used by an ionic app built to extend the MoneyBrilliant finance tracking service",
+  "main": "src/main.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/main.ts",
+    "start:dev": "nodemon src/main.ts"
+  },
+  "author": "Mitchell Hamill",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/express": "^4.17.13",
+    "@types/lodash": "^4.14.182",
+    "@types/node": "^18.6.1",
+    "nodemon": "^2.0.15",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "lodash": "^4.17.21",
+    "puppeteer": "^15.5.0",
+    "stripe": "^8.186.1"
+  }
+}
