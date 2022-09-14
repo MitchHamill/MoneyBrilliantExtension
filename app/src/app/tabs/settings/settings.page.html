@@ -10,4 +10,38 @@
       <ion-title size="large">Settings</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <div *ngIf="!loading">
+    <form [formGroup]="incomeForm" class="form-container">
+      <p class="section-title">Income</p>
+      <ion-list>
+        <ion-item>
+          <ion-label position="floating"> How often are you paid? </ion-label>
+          <ion-select formControlName="frequency">
+            <ion-select-option *ngFor="let freq of paymentFrequencies"
+              >{{freq}}</ion-select-option
+            >
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating"
+            >How much do you take home each pay?</ion-label
+          >
+          <ion-input formControlName="takeHome" type="number"></ion-input>
+        </ion-item>
+      </ion-list>
+      <br />
+      <ion-button
+        (click)="saveIncome()"
+        [disabled]="!incomeForm.valid || !incomeForm.touched"
+        expand="block"
+      >
+        Click me
+      </ion-button>
+    </form>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+  </div>
 </ion-content>

@@ -9,6 +9,10 @@ import {
 import { totalTransactions } from '../../utils/transaction-calculations';
 import { MoneyBrilliantService } from '../../services/money-brilliant/money-brilliant.service';
 import { SummaryPeriod, SummaryPeriodType } from '../../types';
+import { StorageService } from 'src/app/services/storage/storage.service';
+import { getDailyAccrualRate } from 'src/app/utils/utils';
+import { getBusinessDatesCount } from 'src/app/utils/dates';
+import { TabsService } from 'src/app/services/tabs/tabs.service';
 
 interface Overview {
   bank: number;
@@ -34,12 +38,18 @@ export class SummaryPage {
   public summaryPeriod = SummaryPeriodType.week;
   public summary: Summary = { spent: 0, accrued: 0, plannedSave: 0 };
 
-  constructor(private _moneyBrilliant: MoneyBrilliantService) {
+  constructor(
+    private _moneyBrilliant: MoneyBrilliantService,
+    private tabsService: TabsService,
+    private storage: StorageService
+  ) {
     this._moneyBrilliant.authenticationStatus.subscribe((authed) => {
       if (authed) {
         this._init();
       }
     });
+    this.onTabChange(this.storage);
+    this.tabsService.$onSummary.subscribe(() => this.onTabChange(this.storage));
   }
 
   private async _init() {
@@ -60,6 +70,16 @@ export class SummaryPage {
     });
   }
 
+  // For some reason the storage service is lost when changing back
+  private async onTabChange(storage: StorageService) {
+    storage.getIncome().then((income) => {
+      const accrualRate = getDailyAccrualRate(income);
+      const earningDays = getBusinessDatesCount(this._getSummaryPeriod());
+
+      this.summary.accrued = accrualRate * earningDays;
+    });
+  }
+
   private async _summariseTransactions() {
     const period = this._getSummaryPeriod();
     const dateFilter = isBetweenDates(period);
@@ -71,11 +91,7 @@ export class SummaryPage {
       ? totalTransactions(spendingTransactions)
       : 0;
 
-    this.summary = {
-      spent: totalSpent,
-      accrued: 0, // TODO: Income as input - Can it be configured in MB?
-      plannedSave: 0, // TODO: Saving plan - Can it be configured in MB?
-    };
+    this.summary.spent = totalSpent;
   }
 
   private _getSummaryPeriod(): SummaryPeriod {
@@ -106,7 +122,7 @@ export class SummaryPage {
     event.target.complete();
   }
 
-  public periodChanged($event) {
+  public periodChanged() {
     // this.summaryPeriod updated automatically via ngModel
     const period = this._getSummaryPeriod();
     this._moneyBrilliant

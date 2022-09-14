@@ -1,14 +1,14 @@
 <ion-tabs>
   <ion-tab-bar slot="bottom">
-    <ion-tab-button tab="analytics">
+    <ion-tab-button tab="analytics" (click)="selectAnalytics()">
       <ion-icon name="analytics-outline"></ion-icon>
     </ion-tab-button>
 
-    <ion-tab-button tab="summary">
+    <ion-tab-button tab="summary" (click)="selectSummary()">
       <ion-icon name="grid-outline"></ion-icon>
     </ion-tab-button>
 
-    <ion-tab-button tab="settings">
+    <ion-tab-button tab="settings" (click)="selectSettings()">
       <ion-icon name="ellipsis-horizontal-outline"></ion-icon>
     </ion-tab-button>
   </ion-tab-bar>

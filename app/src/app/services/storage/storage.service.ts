@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage';
+import { UserIncome } from 'src/app/types';
 import Cache from './cache';
-import { Transaction } from '../money-brilliant/types';
 
 export enum StorageKeys {
   authToken = 'auth_token',
   transactions = 'transactions',
   overview = 'overview',
+  income = 'user_income',
 }
 
 @Injectable({
@@ -28,5 +29,13 @@ export class StorageService {
 
   public getAuthToken(): Promise<string> {
     return this._storage.get(StorageKeys.authToken);
+  }
+
+  public setIncome(income: UserIncome) {
+    return this._storage.set(StorageKeys.income, income);
+  }
+
+  public getIncome(): Promise<UserIncome | undefined> {
+    return this._storage.get(StorageKeys.income);
   }
 }

@@ -118,15 +118,12 @@ export class MoneyBrilliantService {
     }
 
     const getMinDate = () => earliestTransactionDate(this._transactions.value);
-    console.log(`Min: ${getMinDate()} | Current: ${dateString}`);
     while (getMinDate() > dateString) {
-      console.log(`Min: ${getMinDate()} | Current: ${dateString}`);
       await this._moreTransactions();
     }
   }
 
   public async _moreTransactions() {
-    console.log('Getting more transactions...');
     if (
       this._transactionsMeta.current_page === 0 &&
       !this._transactions.value.length
@@ -146,7 +143,6 @@ export class MoneyBrilliantService {
           }
         });
       if (cachedTransactions) {
-        console.log('Found cached transactions.');
         return this._transactions.next(cachedTransactions);
       }
     }
@@ -157,7 +153,6 @@ export class MoneyBrilliantService {
       page: String((this._transactionsMeta.current_page += 1)),
       per_page: TRANSACTIONS_PAGE_SIZE,
     };
-    console.log('Fetching transactions via API...', { params });
     return this._api
       .get('/transactions', {
         params,
@@ -172,7 +167,6 @@ export class MoneyBrilliantService {
           allTransactions,
           this._transactionsMeta
         );
-        console.log('Received transactions via API.');
         return this._transactions.next(allTransactions);
       });
   }

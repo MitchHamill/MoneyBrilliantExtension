@@ -6,7 +6,7 @@ import tokenHandler from './token';
 import axios from 'axios';
 import bodyParser from 'body-parser';
 
-const api = axios.create({
+const moneyBrilliantApi = axios.create({
   baseURL: 'https://api.moneybrilliant.com.au/api/v1/',
 });
 
@@ -27,7 +27,7 @@ app.post('/money-brilliant-proxy', async (req, res) => {
     if (!path) {
       return res.status(400).send({ message: 'Path is required' });
     }
-    const apiRes = await api(path, _.omit(req.body, ['path']));
+    const apiRes = await moneyBrilliantApi(path, _.omit(req.body, ['path']));
     return res.status(apiRes.status).send(apiRes.data);
   } catch (err) {
     console.error(err);

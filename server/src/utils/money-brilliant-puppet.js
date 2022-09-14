@@ -10,17 +10,15 @@ export async function getNewToken({ username, password }, opts) {
   });
   const page = await browser.newPage();
   await page.goto(MB_SITE);
-  console.log('ON PAGE');
   await page.type('#user_email', username);
   await page.type('#user_password', password);
   await page.click('button');
   await page.waitForSelector('.userinfo');
-  console.log('Logged In!');
   console.log('Getting token...');
   const token = await page.evaluate(() =>
     window.sessionStorage.getItem('auth_token')
   );
-  console.log('Token', token);
+  console.log('Got token');
   await browser.close();
 
   return token;
