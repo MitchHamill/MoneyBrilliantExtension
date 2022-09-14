@@ -30,7 +30,9 @@ app.post('/money-brilliant-proxy', async (req, res) => {
     const apiRes = await moneyBrilliantApi(path, _.omit(req.body, ['path']));
     return res.status(apiRes.status).send(apiRes.data);
   } catch (err) {
-    console.error(err);
+    if (err.response) {
+      return res.status(err.response.status).send(err.response.data);
+    }
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });

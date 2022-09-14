@@ -56,10 +56,7 @@
   </ion-grid>
   <ion-card>
     <ion-card-content style="padding: 10px">
-      <ion-segment
-        [(ngModel)]="summaryPeriod"
-        (ionChange)="periodChanged($event)"
-      >
+      <ion-segment [(ngModel)]="summaryPeriod" (ionChange)="periodChanged()">
         <ion-segment-button value="week">
           <ion-label>This Week</ion-label>
         </ion-segment-button>
