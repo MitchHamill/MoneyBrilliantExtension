@@ -56,9 +56,12 @@
   </ion-grid>
   <ion-card>
     <ion-card-content style="padding: 10px">
-      <ion-segment [(ngModel)]="summaryPeriod" (ionChange)="periodChanged()">
-        <ion-segment-button value="week">
-          <ion-label>This Week</ion-label>
+      <ion-segment
+        [(ngModel)]="summaryPeriodType"
+        (ionChange)="periodChanged()"
+      >
+        <ion-segment-button value="sevenDays">
+          <ion-label>Past 7 Days</ion-label>
         </ion-segment-button>
         <ion-segment-button value="month">
           <ion-label>This Month</ion-label>
@@ -67,6 +70,15 @@
           <ion-label>This Year</ion-label>
         </ion-segment-button>
       </ion-segment>
+      <canvas
+        *ngIf="chart"
+        baseChart
+        [datasets]="chart.datasets"
+        [labels]="chart.labels"
+        type="line"
+        [options]="chart.options"
+      >
+      </canvas>
       <ion-grid class="ion-text-center">
         <ion-row>
           <ion-col size="4">Spent</ion-col>

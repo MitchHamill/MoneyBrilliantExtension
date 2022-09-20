@@ -8,7 +8,7 @@ import { SummaryPeriod } from '../types';
 const PAY_CAT = 'Income - Pay & Salary';
 const REIMB_CAT = 'Refunds and rebates';
 
-type TransactionFilter = (t: Transaction) => boolean;
+export type TransactionFilter = (t: Transaction) => boolean;
 
 export function checkAllFilters(
   ...filters: TransactionFilter[]
@@ -26,15 +26,30 @@ export function not(f: TransactionFilter): TransactionFilter {
   return (t) => !f(t);
 }
 
-export function isIncomePayment(trans: Transaction) {
-  return (
-    trans.account_name === TransactionAccount.personal &&
-    trans.category.name === PAY_CAT
-  );
+export function isIncomePayment(trans: Transaction): boolean;
+export function isIncomePayment(): TransactionFilter;
+export function isIncomePayment(
+  trans?: Transaction
+): TransactionFilter | boolean {
+  const filter = (t) =>
+    t.account_name === TransactionAccount.personal &&
+    t.category.name === PAY_CAT;
+  return trans ? filter(trans) : filter;
 }
 
-export function isReimbursement(trans: Transaction) {
-  return trans.category.name === REIMB_CAT;
+export function isReimbursement(trans: Transaction): boolean;
+export function isReimbursement(): TransactionFilter;
+export function isReimbursement(
+  trans?: Transaction
+): TransactionFilter | boolean {
+  const filter = (t) => t.category.name === REIMB_CAT;
+  return trans ? filter(trans) : filter;
+}
+
+export function isOnDate(date: moment.MomentInput): TransactionFilter {
+  return (t) =>
+    moment(t.transaction_date).startOf('d').toISOString() ===
+    moment(date).startOf('d').toISOString();
 }
 
 export function isBetweenDates({
@@ -47,19 +62,33 @@ export function isBetweenDates({
   };
 }
 
-export function isDebit(t: Transaction) {
-  return t.base_type === 'debit';
+export function isDebit(trans: Transaction): boolean;
+export function isDebit(): TransactionFilter;
+export function isDebit(trans?: Transaction): TransactionFilter | boolean {
+  const filter = (t) => t.base_type === 'debit';
+  return trans ? filter(trans) : filter;
 }
 
-export function isTransfer(t: Transaction) {
-  return t.category.name === 'Transfers';
+export function isTransfer(trans: Transaction): boolean;
+export function isTransfer(): TransactionFilter;
+export function isTransfer(trans?: Transaction): TransactionFilter | boolean {
+  const filter = (t) => t.category.name === 'Transfers';
+  return trans ? filter(trans) : filter;
 }
 
-export function isPersonal(t: Transaction) {
-  return t.account_name === TransactionAccount.personal;
+export function isPersonal(trans: Transaction): boolean;
+export function isPersonal(): TransactionFilter;
+export function isPersonal(trans?: Transaction): TransactionFilter | boolean {
+  const filter = (t) => t.account_name === TransactionAccount.personal;
+  return trans ? filter(trans) : filter;
 }
 
-export function isSpending(t: Transaction) {
-  // return checkAllFilters(checkAnyFilter(isDebit, isReimbursement), not(isTransfer), isPersonal);
-  return (isDebit(t) || isReimbursement(t)) && !isTransfer(t) && isPersonal(t);
+export function isSpending(trans: Transaction): boolean;
+export function isSpending(): TransactionFilter;
+export function isSpending(trans?: Transaction): TransactionFilter | boolean {
+  return checkAllFilters(
+    checkAnyFilter(isDebit, isReimbursement),
+    not(isTransfer),
+    isPersonal
+  );
 }

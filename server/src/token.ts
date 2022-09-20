@@ -2,6 +2,7 @@ import { RequestHandler } from 'express';
 import { getNewToken } from './utils/money-brilliant-puppet';
 
 const tokenHandler: RequestHandler = async (req, res) => {
+  console.log('POST /token');
   const { username, password } = req.query;
   if (!username || !password) {
     return res.status(400).send({

@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Browser } from '@capacitor/browser';
 import { MoneyBrilliantService } from './services/money-brilliant/money-brilliant.service';
-import { StorageService } from './services/storage/storage.service';
 
 @Component({
   selector: 'app-root',

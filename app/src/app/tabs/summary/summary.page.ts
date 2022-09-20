@@ -4,26 +4,37 @@ import { Transaction } from '../../services/money-brilliant/types';
 import {
   checkAllFilters,
   isBetweenDates,
+  isIncomePayment,
   isSpending,
 } from '../../utils/categorise-transactions';
-import { totalTransactions } from '../../utils/transaction-calculations';
+import {
+  getGrowthGraphs,
+  totalTransactions,
+} from '../../utils/transaction-calculations';
 import { MoneyBrilliantService } from '../../services/money-brilliant/money-brilliant.service';
-import { SummaryPeriod, SummaryPeriodType } from '../../types';
+import {
+  SummaryOverview,
+  SummaryPeriod,
+  SummaryPeriodType,
+  UserIncome,
+} from '../../types';
 import { StorageService } from 'src/app/services/storage/storage.service';
 import { getDailyAccrualRate } from 'src/app/utils/utils';
-import { getBusinessDatesCount } from 'src/app/utils/dates';
+import { getBusinessDatesCount, getDateLabels } from 'src/app/utils/dates';
 import { TabsService } from 'src/app/services/tabs/tabs.service';
-
-interface Overview {
-  bank: number;
-  invested: number;
-  netWorth: number;
-}
+import { ChartDataset, ChartOptions } from 'chart.js';
+import { TRANSACTION_CHART_OPTIONS } from 'src/app/constants/chart';
 
 interface Summary {
   spent: number;
   accrued: number;
   plannedSave: number;
+}
+
+interface ChartDetails {
+  datasets: ChartDataset[];
+  labels: string[];
+  options: ChartOptions;
 }
 
 @Component({
@@ -34,9 +45,12 @@ interface Summary {
 export class SummaryPage {
   private _transactions: Transaction[];
 
-  public overview: Overview = {} as Overview;
-  public summaryPeriod = SummaryPeriodType.week;
+  public overview: SummaryOverview = {} as SummaryOverview;
+  public userIncome: UserIncome;
+  public summaryPeriodType = SummaryPeriodType.month;
   public summary: Summary = { spent: 0, accrued: 0, plannedSave: 0 };
+
+  public chart: ChartDetails;
 
   constructor(
     private _moneyBrilliant: MoneyBrilliantService,
@@ -48,8 +62,8 @@ export class SummaryPage {
         this._init();
       }
     });
-    this.onTabChange(this.storage);
-    this.tabsService.$onSummary.subscribe(() => this.onTabChange(this.storage));
+    this.onTabChange();
+    this.tabsService.$onSummary.subscribe(() => this.onTabChange());
   }
 
   private async _init() {
@@ -62,71 +76,115 @@ export class SummaryPage {
       };
     });
 
-    const period = this._getSummaryPeriod();
-    await this._moneyBrilliant.getTransactionsByDate(period.start.toDate());
+    await this._moneyBrilliant.getTransactionsByDate(
+      this.summaryPeriod.start.toDate()
+    );
     this._moneyBrilliant.transactions.subscribe((transactions) => {
       this._transactions = transactions;
-      this._summariseTransactions();
+      this._loadAllSummaries();
     });
   }
 
   // For some reason the storage service is lost when changing back
-  private async onTabChange(storage: StorageService) {
-    storage.getIncome().then((income) => {
-      const accrualRate = getDailyAccrualRate(income);
-      const earningDays = getBusinessDatesCount(this._getSummaryPeriod());
-
-      this.summary.accrued = accrualRate * earningDays;
+  private async onTabChange() {
+    this.storage.getIncome().then((income) => {
+      this.userIncome = income;
+      this._summariseIncome();
     });
   }
 
-  private async _summariseTransactions() {
-    const period = this._getSummaryPeriod();
-    const dateFilter = isBetweenDates(period);
+  private _loadAllSummaries() {
+    this._summariseTransactions();
+    this._summariseIncome();
+    this._generateChart();
+  }
 
-    const spendingTransactions = this._transactions.filter(
-      checkAllFilters(dateFilter, isSpending)
+  private _summariseTransactions() {
+    const totalSpent = totalTransactions(
+      this._transactions,
+      checkAllFilters(isBetweenDates(this.summaryPeriod), isSpending)
     );
-    const totalSpent = spendingTransactions.length
-      ? totalTransactions(spendingTransactions)
-      : 0;
 
     this.summary.spent = totalSpent;
   }
 
-  private _getSummaryPeriod(): SummaryPeriod {
-    let unit: moment.unitOfTime.StartOf;
-    switch (this.summaryPeriod) {
-      case SummaryPeriodType.week:
-        unit = 'W';
-        break;
-      case SummaryPeriodType.month:
-        unit = 'M';
-        break;
-      case SummaryPeriodType.year:
-        unit = 'y';
-        break;
-      default:
-        const _check: never = this.summaryPeriod;
-    }
-    return {
-      start: moment().startOf(unit),
-      end: moment(),
+  private _generateChart() {
+    const labels = getDateLabels(this.summaryPeriod);
+
+    this.chart = {
+      datasets: getGrowthGraphs(
+        this._transactions,
+        this.overview,
+        this.summaryPeriod,
+        this.userIncome
+      ),
+      labels,
+      options: TRANSACTION_CHART_OPTIONS,
     };
   }
 
+  private _summariseIncome() {
+    const accrualRate = this.userIncome
+      ? getDailyAccrualRate(this.userIncome)
+      : 0;
+    const earningDays = getBusinessDatesCount(this.summaryPeriod);
+    this.summary.accrued = accrualRate * earningDays;
+  }
+
+  private get summaryPeriod(): SummaryPeriod {
+    const startTypes: SummaryPeriodType[] = [
+      SummaryPeriodType.month,
+      SummaryPeriodType.year,
+    ];
+    if (startTypes.includes(this.summaryPeriodType)) {
+      let unit: moment.unitOfTime.StartOf;
+      switch (this.summaryPeriodType) {
+        case SummaryPeriodType.month:
+          unit = 'M';
+          break;
+        case SummaryPeriodType.year:
+          unit = 'y';
+          break;
+        default:
+          console.error('Tried to get summary period incorrectly');
+          break;
+      }
+      return {
+        start: moment().startOf(unit),
+        end: moment(),
+      };
+    } else {
+      let amount: moment.DurationInputArg1;
+      let unit: moment.unitOfTime.DurationConstructor;
+      switch (this.summaryPeriodType) {
+        case SummaryPeriodType.sevenDays:
+          amount = 7;
+          unit = 'd';
+          break;
+        default:
+          console.error('Tried to get summary period incorrectly');
+          break;
+      }
+
+      return {
+        start: moment().startOf('d').subtract(amount, unit),
+        end: moment(),
+      };
+    }
+  }
+
   public async refreshData(event) {
-    const period = this._getSummaryPeriod();
     await this._moneyBrilliant.reload();
-    await this._moneyBrilliant.getTransactionsByDate(period.start.toDate());
+    await this._moneyBrilliant.getTransactionsByDate(
+      this.summaryPeriod.start.toDate()
+    );
     event.target.complete();
   }
 
   public periodChanged() {
-    // this.summaryPeriod updated automatically via ngModel
-    const period = this._getSummaryPeriod();
+    // this.summaryPeriodType updated automatically via ngModel
     this._moneyBrilliant
-      .getTransactionsByDate(period.start.toDate())
-      .then(() => this._summariseTransactions());
+      .getTransactionsByDate(this.summaryPeriod.start.toDate())
+      .then(() => this._loadAllSummaries());
   }
 }

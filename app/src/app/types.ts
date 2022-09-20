@@ -5,7 +5,7 @@ export enum TabType {
 }
 
 export enum SummaryPeriodType {
-  week = 'week',
+  sevenDays = 'sevenDays',
   month = 'month',
   year = 'year',
 }
@@ -13,6 +13,12 @@ export enum SummaryPeriodType {
 export interface SummaryPeriod {
   start: moment.Moment;
   end: moment.Moment;
+}
+
+export interface SummaryOverview {
+  bank: number;
+  invested: number;
+  netWorth: number;
 }
 
 export enum PaymentFrequency {

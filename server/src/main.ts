@@ -23,14 +23,17 @@ app.get('/token', tokenHandler);
 
 app.post('/money-brilliant-proxy', async (req, res) => {
   const path = req.body?.path;
+  console.log('POST /proxy | ' + `${req.body.method.toUpperCase()} /${path}`);
   try {
     if (!path) {
       return res.status(400).send({ message: 'Path is required' });
     }
     const apiRes = await moneyBrilliantApi(path, _.omit(req.body, ['path']));
+    console.log(apiRes.status);
     return res.status(apiRes.status).send(apiRes.data);
   } catch (err) {
     if (err.response) {
+      console.log(err.response.status, err.response.data);
       return res.status(err.response.status).send(err.response.data);
     }
     return res.status(500).send({ message: 'Something went wrong' });

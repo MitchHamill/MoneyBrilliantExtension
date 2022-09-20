@@ -1,12 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
-import {
-  BehaviorSubject,
-  from,
-  MonoTypeOperatorFunction,
-  Observable,
-  Subject,
-} from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { StorageKeys, StorageService } from '../storage/storage.service';
 import { MoneyBrilliantApi } from './utils';

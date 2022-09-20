@@ -38,7 +38,9 @@
     "@capacitor/status-bar": "4.0.0",
     "@ionic/angular": "^6.1.9",
     "@ionic/storage": "^3.0.6",
+    "chart.js": "^3.9.1",
     "moment": "^2.29.4",
+    "ng2-charts": "^4.0.0",
     "rxjs": "~6.6.0",
     "tslib": "^2.2.0",
     "zone.js": "~0.11.4"
