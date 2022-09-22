@@ -33,3 +33,8 @@ export interface UserIncome {
   takeHome: number;
   paidDateRef?: string;
 }
+
+export interface UserCredentials {
+  username: string;
+  password: string;
+}

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage';
-import { UserIncome } from 'src/app/types';
+import { UserCredentials, UserIncome } from 'src/app/types';
 import Cache from './cache';
 
 export enum StorageKeys {
@@ -8,6 +8,7 @@ export enum StorageKeys {
   transactions = 'transactions',
   overview = 'overview',
   income = 'user_income',
+  creds = 'user_credentials',
 }
 
 @Injectable({
@@ -29,6 +30,14 @@ export class StorageService {
 
   public getAuthToken(): Promise<string> {
     return this._storage.get(StorageKeys.authToken);
+  }
+
+  public setCredentials(creds: UserCredentials) {
+    return this._storage.set(StorageKeys.creds, creds);
+  }
+
+  public getCredentials(): Promise<UserCredentials | undefined> {
+    return this._storage.get(StorageKeys.creds);
   }
 
   public setIncome(income: UserIncome) {

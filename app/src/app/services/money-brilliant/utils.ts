@@ -11,15 +11,22 @@ export class MoneyBrilliantApi {
   private _web: boolean;
   private _authHeaders: any;
 
+  private authenticate: () => void;
+  private authenticated = new Promise<void>((resolve) => {
+    this.authenticate = resolve;
+  });
+
   constructor(web: boolean) {
     this._web = web;
   }
 
-  private _call(
+  private async _call(
     path: string,
     method: string,
-    options: Omit<HttpOptions, 'url' | 'method'>
+    options: Omit<HttpOptions, 'url' | 'method'>,
+    skipAuth = false
   ) {
+    if (!skipAuth) await this.authenticated;
     let reqConfig: HttpOptions;
     if (options.headers) {
       Object.assign(options.headers, this._authHeaders);
@@ -53,12 +60,20 @@ export class MoneyBrilliantApi {
     this._authHeaders = headers;
   }
 
-  public get(path: string, opts?: Omit<HttpOptions, 'url' | 'method'>) {
-    return this._call(path, 'GET', opts || {});
+  public get(
+    path: string,
+    opts?: Omit<HttpOptions, 'url' | 'method'>,
+    skipAuth = false
+  ) {
+    return this._call(path, 'GET', opts || {}, skipAuth);
   }
 
-  public post(path, opts: Omit<HttpOptions, 'url' | 'method'>) {
-    return this._call(path, 'POST', opts);
+  public post(
+    path,
+    opts: Omit<HttpOptions, 'url' | 'method'>,
+    skipAuth = false
+  ) {
+    return this._call(path, 'POST', opts, skipAuth);
   }
 
   public token(username: string, password: string) {
@@ -69,6 +84,29 @@ export class MoneyBrilliantApi {
         username,
         password,
       },
-    }).then((res) => res?.data?.token);
+    }).then((res) => {
+      const token = res?.data?.token;
+      if (token && typeof token === 'string') {
+        this.authenticate();
+        return token;
+      }
+    });
+  }
+
+  public testToken(token: string) {
+    return this.get(
+      'events',
+      {
+        headers: {
+          'X-User-Email': 'mitchhamill@gmail.com',
+          'X-User-Token': token,
+        },
+      },
+      true
+    ).then((res) => {
+      const authed = res.status === 200;
+      if (authed) this.authenticate();
+      return authed;
+    });
   }
 }

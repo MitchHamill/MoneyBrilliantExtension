@@ -12,6 +12,30 @@
   </ion-header>
 
   <div *ngIf="!loading">
+    <form [formGroup]="credentialsForm" class="form-container">
+      <p class="section-title">Money Brilliant Account</p>
+      <ion-list>
+        <ion-item>
+          <ion-label position="floating"> Username </ion-label>
+          <ion-input type="email" formControlName="username"> </ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating"> Password </ion-label>
+          <show-hide-password>
+            <ion-input type="password" formControlName="password"></ion-input>
+          </show-hide-password>
+        </ion-item>
+      </ion-list>
+      <br />
+      <ion-button
+        (click)="saveCredentials()"
+        [disabled]="!credentialsForm.valid || !credentialsForm.touched"
+        expand="block"
+      >
+        {{submitButton('credentials')}}
+      </ion-button>
+    </form>
+
     <form [formGroup]="incomeForm" class="form-container">
       <p class="section-title">Income</p>
       <ion-list>
@@ -36,7 +60,7 @@
         [disabled]="!incomeForm.valid || !incomeForm.touched"
         expand="block"
       >
-        Click me
+        {{submitButton('income')}}
       </ion-button>
     </form>
   </div>

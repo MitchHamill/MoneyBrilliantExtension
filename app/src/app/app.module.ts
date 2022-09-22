@@ -9,6 +9,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MoneyBrilliantService } from './services/money-brilliant/money-brilliant.service';
 import { StorageService } from './services/storage/storage.service';
+import { TabsService } from './services/tabs/tabs.service';
 
 @NgModule({
   declarations: [AppComponent],
@@ -16,6 +17,7 @@ import { StorageService } from './services/storage/storage.service';
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     Storage,
+    TabsService,
     StorageService,
     MoneyBrilliantService,
   ],

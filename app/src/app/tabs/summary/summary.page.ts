@@ -28,7 +28,6 @@ import { TRANSACTION_CHART_OPTIONS } from 'src/app/constants/chart';
 interface Summary {
   spent: number;
   accrued: number;
-  plannedSave: number;
 }
 
 interface ChartDetails {
@@ -48,9 +47,10 @@ export class SummaryPage {
   public overview: SummaryOverview = {} as SummaryOverview;
   public userIncome: UserIncome;
   public summaryPeriodType = SummaryPeriodType.month;
-  public summary: Summary = { spent: 0, accrued: 0, plannedSave: 0 };
-
+  public summary: Summary = { spent: 0, accrued: 0 };
   public chart: ChartDetails;
+
+  public chartLoading = true;
 
   constructor(
     private _moneyBrilliant: MoneyBrilliantService,
@@ -121,6 +121,7 @@ export class SummaryPage {
       labels,
       options: TRANSACTION_CHART_OPTIONS,
     };
+    this.chartLoading = false;
   }
 
   private _summariseIncome() {
@@ -183,8 +184,12 @@ export class SummaryPage {
 
   public periodChanged() {
     // this.summaryPeriodType updated automatically via ngModel
-    this._moneyBrilliant
-      .getTransactionsByDate(this.summaryPeriod.start.toDate())
-      .then(() => this._loadAllSummaries());
+    this.chartLoading = true;
+    // Use setTimeout to allow the Ui to transaction the period icon before computing the new chart
+    setTimeout(() => {
+      this._moneyBrilliant
+        .getTransactionsByDate(this.summaryPeriod.start.toDate())
+        .then(() => this._loadAllSummaries());
+    }, 0);
   }
 }

@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { StorageKeys, StorageService } from '../storage/storage.service';
 import { MoneyBrilliantApi } from './utils';
 import { Overview, Transaction, TransactionsMeta } from './types';
 import { earliestTransactionDate } from 'src/app/utils/dates';
+import { UserCredentials } from 'src/app/types';
 
-const TRANSACTIONS_PAGE_SIZE = '100';
+const TRANSACTIONS_PAGE_SIZE = '250';
 
 function filterObs<T>(o: Observable<T>, array = false) {
   return o.pipe(
@@ -34,18 +35,11 @@ export class MoneyBrilliantService {
     this._api = new MoneyBrilliantApi(Capacitor.getPlatform() === 'web');
   }
 
-  private get _authHeaders() {
-    return {
-      'X-User-Email': 'mitchhamill@gmail.com',
-      'X-User-Token': this._token,
-    };
-  }
-
   public async init() {
     let res: { authenticated: boolean } = { authenticated: false };
     const storedToken = await this._storage.getAuthToken();
     if (storedToken) {
-      const valid = await this._testToken(storedToken);
+      const valid = await this._api.testToken(storedToken);
       if (valid) {
         this._token = storedToken;
         this._api.setAuthHeaders({
@@ -60,20 +54,7 @@ export class MoneyBrilliantService {
     return res;
   }
 
-  private _testToken(token: string) {
-    return this._api
-      .get('events', {
-        headers: {
-          'X-User-Email': 'mitchhamill@gmail.com',
-          'X-User-Token': token,
-        },
-      })
-      .then((res) => {
-        return res.status === 200;
-      });
-  }
-
-  public async getNewToken(username: string, password: string) {
+  public async getNewToken({ username, password }: UserCredentials) {
     try {
       const token = await this._api.token(username, password);
       if (token) {
@@ -107,20 +88,38 @@ export class MoneyBrilliantService {
   public async getTransactionsByDate(date: Date) {
     const dateString = date.toISOString();
 
-    if (!this._transactions.value.length) {
-      await this._moreTransactions();
+    /**
+     * Use a copy of the main transactions subject as to
+     *  not trigger subscriptions to the transactions every time
+     *  moreTransactions is called.
+     */
+    const trackingTransactions = new BehaviorSubject<Transaction[]>(
+      this._transactions.value
+    );
+
+    if (!trackingTransactions.value.length) {
+      await this._moreTransactions(trackingTransactions);
     }
 
-    const getMinDate = () => earliestTransactionDate(this._transactions.value);
-    while (getMinDate() > dateString) {
-      await this._moreTransactions();
+    const getMinDate = () =>
+      earliestTransactionDate(trackingTransactions.value);
+
+    if (getMinDate() <= dateString) {
+      this._transactions.next(trackingTransactions.value);
+      return;
     }
+
+    while (getMinDate() > dateString) {
+      await this._moreTransactions(trackingTransactions);
+    }
+
+    this._transactions.next(trackingTransactions.value);
   }
 
-  public async _moreTransactions() {
+  public async _moreTransactions(transactionsSubject = this._transactions) {
     if (
       this._transactionsMeta.current_page === 0 &&
-      !this._transactions.value.length
+      !transactionsSubject.value.length
     ) {
       const cachedTransactions: Transaction[] | undefined =
         await this._storage.cache.getTransactions().then((transCache) => {
@@ -137,7 +136,7 @@ export class MoneyBrilliantService {
           }
         });
       if (cachedTransactions) {
-        return this._transactions.next(cachedTransactions);
+        return transactionsSubject.next(cachedTransactions);
       }
     }
 
@@ -147,21 +146,23 @@ export class MoneyBrilliantService {
       page: String((this._transactionsMeta.current_page += 1)),
       per_page: TRANSACTIONS_PAGE_SIZE,
     };
+
     return this._api
       .get('/transactions', {
         params,
       })
       .then((res) => {
         this._transactionsMeta = res.data?._metadata;
-        const currentTransactions = this._transactions.value;
-        const newTransactions = res.data?.transactions as Transaction[];
+        const currentTransactions = transactionsSubject.value;
+        const newTransactions = (res.data?.transactions || []) as Transaction[];
 
         const allTransactions = [...currentTransactions, ...newTransactions];
         this._storage.cache.setTransactions(
           allTransactions,
           this._transactionsMeta
         );
-        return this._transactions.next(allTransactions);
+        transactionsSubject.next(allTransactions);
+        return;
       });
   }
 
@@ -169,7 +170,7 @@ export class MoneyBrilliantService {
     if (!this._transactions.value.length) {
       this._moreTransactions();
     }
-    return filterObs(this._transactions.asObservable(), true);
+    return this._transactions.asObservable();
   }
 
   private async _importCache() {
@@ -184,8 +185,8 @@ export class MoneyBrilliantService {
       if (transCache) {
         const { data, cached, meta } = transCache;
         if (isRelevant(cached)) {
-          this._transactions.next(data);
-          this._transactionsMeta = meta;
+          if (data) this._transactions.next(data);
+          if (meta) this._transactionsMeta = meta;
         }
       }
     });
